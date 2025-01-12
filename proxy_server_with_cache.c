@@ -92,7 +92,20 @@ int main(int argc, char* argv[]){
         if(client_socketId < 0){
 			fprintf(stderr, "Error in Accepting connection !\n");
 			exit(1);
-		}
+		}else{
+            Connected_socketId[i]=client_socketId;
+        }
+
+        struct sockaddr_in * client_pt = (struct sockaddr_in *)&client_addr;
+        struct in_addr ip_addr = client_pt->sin_addr;
+        char str[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &ip_addr, str, INET_ADDRSTRLEN);
+        printf("Client is connected with port number %d and ip address is %s\n",ntohs(client_addr.sin_port), str);
+
+        pthread_create(&tid[i], NULL, thread_fn, (void*)&Connected_socketId[i]);
+        i++;
     }
+    close(proxy_socketId);
+    return 0;
 }
 
