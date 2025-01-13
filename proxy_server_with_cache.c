@@ -19,6 +19,8 @@
 typedef struct cache_element cache_element;
 #define MAX_CLIENTS 10
 #define MAX_BYTES 4096 
+#define MAX_SIZE 200*(1<<20)
+#define MAX_ELEMENT_SIZE 10*(1<<20)
 
 struct cache_element{
     char* data;
@@ -40,6 +42,79 @@ pthread_mutex_t lock;
 
 cache_element* head;
 int cache_size;
+
+int sendHttpErrorResponse(int socket, int status_code) {
+    char response[1024];
+    char currentTime[50];
+    time_t now = time(0);
+    struct tm data = *gmtime(&now);
+    strftime(currentTime, sizeof(currentTime), "%a, %d %b %Y %H:%M:%S %Z", &data);
+
+    const char* statusMessage;
+    const char* htmlBody;
+    int contentLength;
+
+    switch (status_code) {
+        case 400:
+            statusMessage = "400 Bad Request";
+            htmlBody = "<HTML><HEAD><TITLE>400 Bad Request</TITLE></HEAD>\n"
+                       "<BODY><H1>400 Bad Request</H1>\n</BODY></HTML>";
+            contentLength = strlen(htmlBody);
+            break;
+
+        case 403:
+            statusMessage = "403 Forbidden";
+            htmlBody = "<HTML><HEAD><TITLE>403 Forbidden</TITLE></HEAD>\n"
+                       "<BODY><H1>403 Forbidden</H1><br>Permission Denied\n</BODY></HTML>";
+            contentLength = strlen(htmlBody);
+            break;
+
+        case 404:
+            statusMessage = "404 Not Found";
+            htmlBody = "<HTML><HEAD><TITLE>404 Not Found</TITLE></HEAD>\n"
+                       "<BODY><H1>404 Not Found</H1>\n</BODY></HTML>";
+            contentLength = strlen(htmlBody);
+            break;
+
+        case 500:
+            statusMessage = "500 Internal Server Error";
+            htmlBody = "<HTML><HEAD><TITLE>500 Internal Server Error</TITLE></HEAD>\n"
+                       "<BODY><H1>500 Internal Server Error</H1>\n</BODY></HTML>";
+            contentLength = strlen(htmlBody);
+            break;
+
+        case 501:
+            statusMessage = "501 Not Implemented";
+            htmlBody = "<HTML><HEAD><TITLE>501 Not Implemented</TITLE></HEAD>\n"
+                       "<BODY><H1>501 Not Implemented</H1>\n</BODY></HTML>";
+            contentLength = strlen(htmlBody);
+            break;
+
+        case 505:
+            statusMessage = "505 HTTP Version Not Supported";
+            htmlBody = "<HTML><HEAD><TITLE>505 HTTP Version Not Supported</TITLE></HEAD>\n"
+                       "<BODY><H1>505 HTTP Version Not Supported</H1>\n</BODY></HTML>";
+            contentLength = strlen(htmlBody);
+            break;
+
+        default:
+            return -1; // Unsupported status code
+    }
+
+    snprintf(response, sizeof(response),
+        "HTTP/1.1 %s\r\n"
+        "Content-Length: %d\r\n"
+        "Connection: keep-alive\r\n"
+        "Content-Type: text/html\r\n"
+        "Date: %s\r\n"
+        "Server: MyCustomServer/1.0\r\n\r\n"
+        "%s",
+        statusMessage, contentLength, currentTime, htmlBody);
+
+    printf("%s\n", statusMessage); // Log the error status
+    send(socket, response, strlen(response), 0); // Send response
+    return 1;
+}
 
 int connectRemoteServer(char* host_addr, int port_num){
 
@@ -303,3 +378,94 @@ int main(int argc, char* argv[]){
     return 0;
 }
 
+cache_element* find(char* url){
+    cache_element* site=NULL;
+
+    int temp_lock_val = pthread_mutex_lock(&lock);
+    printf("Remove cache lock acquired %d\n", temp_lock_val);
+    
+    if(head!=NULL){
+        site=head;
+        while(site!=NULL){
+            if(!strcmp(site->url,url)){
+                printf("LRU Time Track Before : %ld", site->lru_time_track);
+                printf("\n url found\n");
+
+                site->lru_time_track = time(NULL);
+                printf("LRU Time Taken After: %ld", site->lru_time_track);
+                break;
+            }
+            site=site->next;
+        }
+    }else{
+        printf("\n url not found \n");
+    }
+
+    temp_lock_val = pthread_mutex_unlock(&lock);
+    printf("Remove cache lock unlocked %d\n", temp_lock_val);
+    return site;
+}
+
+void remove_cache_element(){
+
+    cache_element *p;
+    cache_element *q;
+    cache_element *temp;
+
+    int temp_lock_val = pthread_mutex_lock(&lock);
+    printf("Remove Cache Lock Acquired %d\n", temp_lock_val);
+    if(head!=NULL){
+        for(q=head, p=head, temp=head; q->next!=NULL; q=q->next){
+            if(( (q -> next) -> lru_time_track) < (temp -> lru_time_track)) {
+				temp = q -> next;
+				p = q;
+			}
+        }
+        if(temp==head){
+            head = head->next;
+        }else{
+            p->next = temp->next;
+        }
+        cache_size = cache_size - (temp -> len)-sizeof(cache_element)-strlen(temp->url) - 1;
+        free(temp->data);
+        free(temp->url);
+        free(temp);
+    }
+
+    temp_lock_val = pthread_mutex_unblock(&lock);
+    printf("Remove cache lock unlocked %d\n", temp_lock_val);
+}
+
+int add_cache_element(char* data, int size, char* url){
+    int temp_lock_val = pthread_mutex_lock(&lock);
+    printf("Add cache Lock acquired %d\n", temp_lock_val);
+
+    int element_size = size +1+strlen(url)+ sizeof(cache_element);
+    if(element_size>MAX_ELEMENT_SIZE){
+        temp_lock_val = pthread_mutex_unlock(&lock);
+        printf("Add cache lock unlocked %d\n", temp_lock_val);
+        return 0;
+    
+    }else{
+        while(cache_size+element_size>MAX_SIZE){
+            remove_cache_element();
+        }
+
+        cache_element* element = (cache_element*) malloc(sizeof(cache_element)); 
+        element->data = (char*)malloc(size+1);
+        strcpy(element->data,data);
+        element -> url  =(char*)malloc(1+(strlen(url)*sizeof(char)));
+        strcpy(element -> url, url);
+        element->lru_time_track=time(NULL);
+
+        element->next=head;
+        element->len=size;
+        head=element;
+        cache_size+=element_size;
+        temp_lock_val = pthread_mutex_unlock(&lock);
+        printf("Add cache lock unlocked %d\n", temp_lock_val);
+
+        return 1;
+    }
+    return 0;
+}
