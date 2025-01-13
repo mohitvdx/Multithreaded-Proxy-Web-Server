@@ -1,8 +1,7 @@
-Here's the updated documentation based on the code you provided, which integrates details about the proxy server project with multithreading, caching, and error handling functionalities:
 
 ---
 
-**Multithreaded Proxy Server with Caching Documentation**
+**Multithreaded Proxy Server with Caching**
 
 ---
 
@@ -29,6 +28,11 @@ This project implements a multithreaded HTTP proxy server capable of caching web
 ```
 
 ---
+### Flow Diagram
+
+![Flow diagram](FlowDiagram/FlowDiagram.png)
+
+This diagram illustrates the process flow of how a client request is handled by the proxy server, from the initial request to response generation, caching, and error handling.
 
 ### Core Functions
 
@@ -162,14 +166,29 @@ tar:
 
 ### Usage
 
-1. **Start the Proxy Server**: Run the compiled binary to start the proxy server.
+1. **Start the Proxy Server**: Run the compiled binary to start the proxy server on a specific port. For example:
    ```
-   ./proxy <port no.>
+   ./proxy 8080
    ```
+   This will start the proxy server on port 8080. Ensure the server is accessible to clients.
 
-2. **Connect Clients**: Clients can connect to the proxy server to request cached data or fresh responses.
+2. **Connect Clients**: Clients can connect to the proxy server through the specified port (e.g., `localhost:8080`). When clients request a web resource, the proxy will check if the resource is in the cache. If it is, it will return the cached data; otherwise, it will fetch the resource from the remote server.
 
 3. **Manage Cache**: The server will cache responses for frequently accessed URLs, improving the speed and reducing the network traffic for repeated requests.
+
+---
+
+### Computer Science Fundamentals Used
+
+1. **Multithreading**: Each incoming client request is processed in a separate thread, allowing the server to handle multiple client requests simultaneously. The use of threads ensures efficient resource utilization and faster response times. This is achieved using `pthread` library functions.
+
+2. **Caching**: The project employs a caching mechanism to store frequently accessed resources. The LRU (Least Recently Used) policy is used to manage cache eviction, ensuring that the most recently accessed items remain in the cache, while less frequently accessed items are removed.
+
+3. **Socket Programming**: The project utilizes low-level socket programming to establish communication between the client, proxy server, and remote server. This includes managing TCP/IP connections, parsing HTTP requests, and sending back HTTP responses.
+
+4. **Error Handling**: Proper error handling ensures the system remains stable and responds with appropriate HTTP status codes when issues occur, such as malformed requests or connection failures.
+
+5. **Concurrency Management**: Semaphores are used to ensure that shared resources, such as the cache, are accessed in a thread-safe manner, avoiding race conditions and ensuring data integrity.
 
 ---
 
