@@ -315,7 +315,7 @@ int main(int argc, char* argv[]){
     sem_init(&semaphore, 0, MAX_CLIENTS);
     pthread_mutex_init(&lock, NULL);
 
-    if(argv == 2){
+    if(argc == 2){
         port_number = atoi(argv[1]);
     }else{
         printf("Too few arguments \n");
@@ -432,7 +432,7 @@ void remove_cache_element(){
         free(temp);
     }
 
-    temp_lock_val = pthread_mutex_unblock(&lock);
+    temp_lock_val = pthread_mutex_unlock(&lock);
     printf("Remove cache lock unlocked %d\n", temp_lock_val);
 }
 
