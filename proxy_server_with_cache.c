@@ -285,7 +285,7 @@ int checkHTTPversion(char *msg)
 
 void* thread_fn(void* socketNew){
     sem_wait(&semaphore);
-    int p;
+    int p=10;
     sem_getvalue(&semaphore, &p);
     printf("semaphore value: %d\n", p);
 

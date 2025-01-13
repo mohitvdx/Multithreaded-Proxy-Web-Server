@@ -30,7 +30,11 @@ This project implements a multithreaded HTTP proxy server capable of caching web
 ---
 ### Flow Diagram
 
-![Flow diagram](FlowDiagram/FlowDiagram.png)
+<!-- ![Flow diagram](FlowDiagram/FlowDiagram.png) -->
+<div style="text-align: center;">
+  <img src="Images/FlowDiagram.png" style="width: 85%; border-radius: 15px;" />
+</div>
+
 
 This diagram illustrates the process flow of how a client request is handled by the proxy server, from the initial request to response generation, caching, and error handling.
 
@@ -172,9 +176,40 @@ tar:
    ```
    This will start the proxy server on port 8080. Ensure the server is accessible to clients.
 
-2. **Connect Clients**: Clients can connect to the proxy server through the specified port (e.g., `localhost:8080`). When clients request a web resource, the proxy will check if the resource is in the cache. If it is, it will return the cached data; otherwise, it will fetch the resource from the remote server.
+2. **Connect Clients**: Clients can connect to the proxy server through the specified port (e.g., Open `http://localhost:8080/https://iiitbhopal.ac.in/#/website/home`). When clients request a web resource, the proxy will check if the resource is in the cache. If it is, it will return the cached data; otherwise, it will fetch the resource from the remote server.
 
 3. **Manage Cache**: The server will cache responses for frequently accessed URLs, improving the speed and reducing the network traffic for repeated requests.
+
+Note: Accept the below dialogue to allow setting up proxy server.
+
+<div style="text-align: center;">
+  <img src="Images/ProxyAccept.png" style="width: 50%; border-radius: 15px;" />
+</div>
+
+Note: Use incognito mode in browser to test the proxy server. So that browser cache will not be used.
+
+---
+
+### Terminal Output
+
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; justify-items: center;">
+  <div>
+    <img src="Images/running1.png" style="width: 100%; max-width: 350px; border-radius: 15px;" />
+  </div>
+  <div>
+    <img src="Images/running2.png" style="width: 100%; max-width: 350px; border-radius: 15px;" />
+  </div>
+  <!-- <div>
+    <img src="Images/running3.png" style="width: 100%; max-width: 350px; border-radius: 15px;" />
+  </div>
+  <div>
+    <img src="Images/running4.png" style="width: 100%; max-width: 350px; border-radius: 15px;" />
+  </div> -->
+  <div style="grid-column: span 2; text-align: center;">
+    <img src="Images/running3.png" style="width: 100%; max-width: 350px; border-radius: 15px;" />
+  </div>
+</div>
+
 
 ---
 
@@ -202,6 +237,12 @@ tar:
   - 500 Internal Server Error
   - 501 Not Implemented
   - 505 HTTP Version Not Supported
+
+---
+
+### Note
+
+This project works better in linux/unix environment.
 
 ---
 
